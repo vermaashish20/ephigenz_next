@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, Filter, TrendingUp, Calendar, User, Clock } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -9,10 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import { getAllArticles } from "@/apis/blogApi";
 
 const Blog = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const categories = [
     { id: "all", name: "All Articles", count: 156 },
@@ -23,65 +26,30 @@ const Blog = () => {
     { id: "ai-ethics", name: "AI Ethics", count: 17 },
   ];
 
-  const articles = [
-    {
-      id: 1,
-      title: "The Future of Large Language Models: Beyond GPT-4",
-      excerpt: "Exploring the next generation of language models and their potential impact on AI research and applications.",
-      author: "Dr. Sarah Chen",
-      date: "Dec 15, 2024",
-      readTime: "8 min",
-      category: "nlp",
-      featured: true,
-      trending: true,
-    },
-    {
-      id: 2,
-      title: "Building Robust AI Systems: A Comprehensive Guide",
-      excerpt: "Learn the best practices for developing reliable and scalable AI systems in production environments.",
-      author: "Alex Kumar",
-      date: "Dec 14, 2024",
-      readTime: "12 min",
-      category: "machine-learning",
-    },
-    {
-      id: 3,
-      title: "Computer Vision Breakthroughs in 2024",
-      excerpt: "A deep dive into the latest advances in computer vision and their real-world applications.",
-      author: "Maria Rodriguez",
-      date: "Dec 13, 2024",
-      readTime: "10 min",
-      category: "computer-vision",
-      trending: true,
-    },
-    {
-      id: 4,
-      title: "Understanding Neural Network Architectures",
-      excerpt: "From CNNs to Transformers: A complete guide to modern neural network architectures.",
-      author: "James Wilson",
-      date: "Dec 12, 2024",
-      readTime: "15 min",
-      category: "deep-learning",
-    },
-    {
-      id: 5,
-      title: "AI Ethics: Building Responsible AI Systems",
-      excerpt: "Exploring the ethical considerations and best practices for developing responsible AI.",
-      author: "Dr. Emily Zhang",
-      date: "Dec 11, 2024",
-      readTime: "7 min",
-      category: "ai-ethics",
-    },
-    {
-      id: 6,
-      title: "Real-time Object Detection Systems",
-      excerpt: "Building efficient object detection systems for real-time applications using modern frameworks.",
-      author: "Michael Brown",
-      date: "Dec 10, 2024",
-      readTime: "9 min",
-      category: "computer-vision",
-    },
-  ];
+  useEffect(() => {
+    getAllArticles()
+      .then(articles => {
+        const mappedArticles = articles.map(article => ({
+          id: article.id,
+          slug: article.slug,
+          title: article.title,
+          excerpt: article.description,
+          author: article.author?.name || 'to be filled',
+          date: article.publishedDate,
+          readTime: `${article.readTime} min`,
+          category: article.category?.name || 'to be filled',
+          coverImage: article.cover?.url || '',
+          featured: false,
+          trending: false,
+        }));
+        setArticles(mappedArticles);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
 
   const filteredArticles = articles.filter((article) => {
     const matchesCategory = selectedCategory === "all" || article.category === selectedCategory;
@@ -148,9 +116,17 @@ const Blog = () => {
           {filteredArticles.filter(a => a.featured)[0] && (
             <Card className="glass border-primary/20 mb-8 overflow-hidden">
               <div className="grid md:grid-cols-2 gap-6">
-                <div className="aspect-video bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                  <span className="text-muted-foreground">Featured Article Image</span>
-                </div>
+                {filteredArticles.filter(a => a.featured)[0].coverImage ? (
+                  <img
+                    src={filteredArticles.filter(a => a.featured)[0].coverImage}
+                    alt={filteredArticles.filter(a => a.featured)[0].title}
+                    className="w-full h-full object-cover aspect-video rounded-lg"
+                  />
+                ) : (
+                  <div className="aspect-video bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center rounded-lg">
+                    <span className="text-muted-foreground">Featured Article Image</span>
+                  </div>
+                )}
                 <div className="p-6 flex flex-col justify-center">
                   <div className="flex items-center gap-2 mb-3">
                     <Badge className="gradient-primary">Featured</Badge>
@@ -179,7 +155,7 @@ const Blog = () => {
                       {filteredArticles.filter(a => a.featured)[0].readTime}
                     </span>
                   </div>
-                  <Link href={`/blog/${filteredArticles.filter(a => a.featured)[0].id}`}>
+                  <Link href={`/blog/${filteredArticles.filter(a => a.featured)[0].slug}`}>
                     <Button className="gradient-primary hover:opacity-90">
                       Read Article
                     </Button>
@@ -193,13 +169,23 @@ const Blog = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredArticles.filter(a => !a.featured).map((article) => (
               <Card key={article.id} className="glass border-border hover:border-primary/50 transition-all duration-300">
-                <div className="aspect-video bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
-                  <span className="text-muted-foreground">Article Image</span>
-                </div>
+                {article.coverImage ? (
+                  <div className="h-48 overflow-hidden rounded-t-lg">
+                    <img
+                      src={article.coverImage}
+                      alt={article.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="h-48 bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center rounded-t-lg">
+                    <span className="text-muted-foreground">Article Image</span>
+                  </div>
+                )}
                 <div className="p-6">
                   <div className="flex items-center gap-2 mb-3">
                     <Badge variant="secondary">
-                      {categories.find(c => c.id === article.category)?.name}
+                      {article.category}
                     </Badge>
                     {article.trending && (
                       <Badge variant="outline">
@@ -224,7 +210,7 @@ const Blog = () => {
                       {article.readTime}
                     </span>
                   </div>
-                  <Link href={`/blog/${article.id}`}>
+                  <Link href={`/blog/${article.slug}`}>
                     <Button variant="outline" className="w-full border-primary/20 hover:bg-primary/10">
                       Read More
                     </Button>
