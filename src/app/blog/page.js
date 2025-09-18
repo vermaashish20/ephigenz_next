@@ -15,16 +15,8 @@ const Blog = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [articles, setArticles] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const categories = [
-    { id: "all", name: "All Articles", count: 156 },
-    { id: "machine-learning", name: "Machine Learning", count: 42 },
-    { id: "nlp", name: "Natural Language Processing", count: 38 },
-    { id: "computer-vision", name: "Computer Vision", count: 31 },
-    { id: "deep-learning", name: "Deep Learning", count: 28 },
-    { id: "ai-ethics", name: "AI Ethics", count: 17 },
-  ];
 
   useEffect(() => {
     getAllArticles()
@@ -38,10 +30,33 @@ const Blog = () => {
           date: article.publishedDate,
           readTime: `${article.readTime} min`,
           category: article.category?.name || 'to be filled',
+          categorySlug: article.category?.slug || '',
           coverImage: article.cover?.url || '',
           featured: false,
           trending: false,
         }));
+
+        // Compute categories with counts
+        const categoryMap = new Map();
+        mappedArticles.forEach(article => {
+          const catName = article.category;
+          const catSlug = article.categorySlug;
+          if (catName && catName !== 'to be filled') {
+            if (categoryMap.has(catSlug)) {
+              categoryMap.get(catSlug).count += 1;
+            } else {
+              categoryMap.set(catSlug, { id: catSlug, name: catName, count: 1 });
+            }
+          }
+        });
+
+        const realCategories = Array.from(categoryMap.values()).sort((a, b) => b.count - a.count);
+        const allCategories = [
+          { id: "all", name: "All Articles", count: mappedArticles.length },
+          ...realCategories
+        ];
+
+        setCategories(allCategories);
         setArticles(mappedArticles);
         setLoading(false);
       })
@@ -52,7 +67,7 @@ const Blog = () => {
   }, []);
 
   const filteredArticles = articles.filter((article) => {
-    const matchesCategory = selectedCategory === "all" || article.category === selectedCategory;
+    const matchesCategory = selectedCategory === "all" || article.categorySlug === selectedCategory;
     const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           article.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
@@ -63,7 +78,7 @@ const Blog = () => {
       <Header />
 
       <main className="pt-24 pb-20">
-        <div className="container mx-auto px-4">
+        <div className="max-w-screen-2xl mx-auto px-2">
           {/* Page Header */}
           <div className="text-center mb-12">
             <h1 className="text-5xl md:text-6xl font-bold mb-4">

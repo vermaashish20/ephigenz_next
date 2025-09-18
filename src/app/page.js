@@ -8,10 +8,12 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="pt-16">
-        <HeroSection />
-        <FeaturedArticles />
-        <FeaturedTools />
+      <main className="pt-8">
+        <div className="max-w-screen-2xl mx-auto px-2">
+          <HeroSection />
+          <FeaturedArticles />
+          <FeaturedTools />
+        </div>
       </main>
       <Footer />
     </div>
