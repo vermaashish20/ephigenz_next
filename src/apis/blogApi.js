@@ -15,7 +15,7 @@ const prependBaseUrl = (obj) => {
 
 export const getAllArticles = async () => {
   try {
-    const res = await fetch(`${API_BASE}/articles?populate=*`);
+    const res = await fetch(`${API_BASE}/articles`);
     if (!res.ok) throw new Error('Failed to fetch articles');
     const data = await res.json();
     data.data.forEach(article => {
@@ -30,11 +30,11 @@ export const getAllArticles = async () => {
 
 export const getArticleById = async (id) => {
   try {
-    const res = await fetch(`${API_BASE}/articles?id=${id}&populate=*`);
+    const res = await fetch(`${API_BASE}/articles/${id}?populate=*`);
     if (!res.ok) throw new Error('Failed to fetch article');
     const data = await res.json();
-    const article = data.data[0];
-    if (article && article.cover) prependBaseUrl(article.cover);
+    const article = data.data;
+    if (article) prependBaseUrl(article);
     return article;
   } catch (error) {
     console.error(error);
